@@ -108,11 +108,10 @@ struct Receiver_t
 
     Frame recv_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
     uint8_t recv_state;
-    uint8_t window_base;
 
     uint8_t base;  // 窗口的基序号，即最大已确认帧+1
-    uint8_t next_seq_num;
-    uint8_t window_size;    
+    uint8_t window_size;
+    uint8_t next_seq;
 };
 
 struct Sender_t

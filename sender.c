@@ -56,78 +56,41 @@ void handle_incoming_acks(Sender *sender,
         return;
     }
 
-    if(ack_frame->dst_port != sender->send_id || ack_frame->ack_num < sender->base - 1)
+    if (ack_frame->dst_port != sender->send_id)
     {
-        // Corrupted frame, ignore it
         fprintf(stderr, "<SEND_%d>:Recv ack for others\n", sender->send_id);
         free(ack_frame);
         return;
     }
 
-    
-    if(ack_frame->ack_num < sender->base - 1)
-    {
-        // Corrupted frame, ignore it
-        fprintf(stderr, "<SEND_%d>:Ignore past ack\n", sender->send_id);
-        free(ack_frame);
-        return;
-    }
-
-    // printf("<SEND_%d>: received ACK %d\n", sender->send_id, ack_frame->ack_num);
-
     ack_frame->ack_num %= MAX_SEQ_NUM;
-    // 如果base - 1 == ack，意味着收到重复ack，重传
-    // if (ack_frame->ack_num == sender->base - 1)
-    // {
-    //     // ACK is for the base frame
-    //     sender->next_seq_num = sender->base;
-    //     // setting sender state
-    //     sender->output_state = 0;
-    //     sender->window_base = 0;
-    // }
-    // else
-    if (sender->base <= sender->next_seq_num)
-    {
-        // 非法ack值，输出错误信息
-        if (ack_frame->ack_num >= sender->next_seq_num)
-            fprintf(stderr, "<SEND_%d>: received an invalid ACK value %d\n", sender->send_id, ack_frame->ack_num);
-        else if (ack_frame->ack_num >= sender->base &&
-                 ack_frame->ack_num < sender->next_seq_num)
-        {
 
-            int len = ack_frame->ack_num + 1 - sender->base;
-            sender->base += len;
-            sender->base %= MAX_SEQ_NUM;
-            sender->window_base += len;
-            sender->window_base %= sender->window_size;
-            fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
-        }
-        else
-        {
-            fprintf(stderr, "<SEND_%d>: Ignore an unused ACK %d.\n", sender->send_id, ack_frame->ack_num);
-        }
-    }
-    else if (sender->base > sender->next_seq_num)
+    if (sender->base <= sender->next_seq_num &&
+        ack_frame->ack_num >= sender->base &&
+        ack_frame->ack_num < sender->next_seq_num)
     {
-        // 非法ack值，输出错误信息
-        if (ack_frame->ack_num >= sender->next_seq_num && ack_frame->ack_num < sender->base)
-            fprintf(stderr, "<SEND_%d>: received an invalid ACK value %d\n", sender->send_id, ack_frame->ack_num);
-        else if (ack_frame->ack_num >= sender->base ||
-                 ack_frame->ack_num < sender->next_seq_num)
-        {
-
-                int len = ack_frame->ack_num + 1 - sender->base;
-                sender->base += len;
-                sender->base %= MAX_SEQ_NUM;
-                sender->window_base += len;
-                sender->window_base %= sender->window_size;
-                fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
-        }
-        else
-        {
-            fprintf(stderr, "<SEND_%d>: Ignore an unused ACK %d.\n", sender->send_id, ack_frame->ack_num);
-        }
+        int len = ack_frame->ack_num + 1 - sender->base;
+        sender->base += len;
+        sender->base %= MAX_SEQ_NUM;
+        sender->window_base += len;
+        sender->window_base %= sender->window_size;
+        fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
     }
+    else if (sender->base > sender->next_seq_num &&
+             (ack_frame->ack_num >= sender->base ||
+              ack_frame->ack_num < sender->next_seq_num))
+    {
+        int len = ack_frame->ack_num + 1 - sender->base;
+        sender->base += len;
+        sender->base %= MAX_SEQ_NUM;
+        sender->window_base += len;
+        sender->window_base %= sender->window_size;
+        fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
+    }
+    else
+        fprintf(stderr, "<SEND_%d>:Ignore outside ack %d\n", sender->send_id, ack_frame->ack_num);
+
+    free(ack_frame);
 }
 
 struct timeval get_expiring_timeval(long timeout_duration)
@@ -233,7 +196,7 @@ void handle_input_cmds(Sender *sender,
 void handle_timedout_frames(Sender *sender,
                             LLnode **outgoing_frames_head_ptr)
 {
-    uint8_t mask = 0xFFFF >> sender->window_size;
+    uint8_t mask = 0xFF >> (8 - sender->window_size);
     uint8_t state = sender->output_state & mask;
     if (state == 0)
         return;
