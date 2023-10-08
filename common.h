@@ -16,13 +16,14 @@
 
 #define MAX_COMMAND_LENGTH 16
 #define AUTOMATED_FILENAME 512
-#define MAX_WINDOW_SIZE 10
 #define MAX_TIMEOUT 1000000
 
 typedef unsigned char uchar_t;
 
 #define MAX_FRAME_SIZE 64
-#define SLIDE_WINDOW_SIZE 4
+
+#define SLIDE_WINDOW_SIZE 8 // 不得超过8
+#define MAX_SEQ_NUM 256
 #define FRAME_PAYLOAD_SIZE 48
 
 // 64 - 48 = 16 - 8 = 8
@@ -105,6 +106,10 @@ struct Receiver_t
     
     int recv_id;
 
+    Frame recv_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
+    uint8_t recv_state;
+    uint8_t window_base;
+
     uint8_t base;  // 窗口的基序号，即最大已确认帧+1
     uint8_t next_seq_num;
     uint8_t window_size;    
@@ -124,8 +129,8 @@ struct Sender_t
     LLnode * input_framelist_head;  // 以Char指针存放
     int send_id; // 对应于port
 
-    Frame output_frames[MAX_WINDOW_SIZE];  // 以Frame指针存放
-    uint16_t output_state;
+    Frame output_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
+    uint8_t output_state;
     uint8_t window_base;
 
     uint8_t base;  // 窗口的基序号，即最大已确认帧+1

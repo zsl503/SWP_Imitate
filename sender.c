@@ -9,7 +9,7 @@ void init_sender(Sender *sender, int id)
 
     sender->base = 0;
     sender->next_seq_num = 0;
-    sender->window_size = 10;
+    sender->window_size = 8;
 
     sender->window_base = 0;
     sender->output_state = 0;
@@ -48,7 +48,7 @@ void handle_incoming_acks(Sender *sender,
     // Check whether the frame is corrupted
     // Check whether the frame is for this sender
     // Do sliding window protocol for sender/receiver pair
-    if (is_corrupted(ack_frame) || ack_frame->dst_port != sender->send_id || ack_frame->ack_num < sender->base - 1)
+    if (is_corrupted(ack_frame))
     {
         // Corrupted frame, ignore it
         fprintf(stderr, "<SEND_%d>:Recv corrupted ack\n", sender->send_id);
@@ -56,9 +56,26 @@ void handle_incoming_acks(Sender *sender,
         return;
     }
 
+    if(ack_frame->dst_port != sender->send_id || ack_frame->ack_num < sender->base - 1)
+    {
+        // Corrupted frame, ignore it
+        fprintf(stderr, "<SEND_%d>:Recv ack for others\n", sender->send_id);
+        free(ack_frame);
+        return;
+    }
+
+    
+    if(ack_frame->ack_num < sender->base - 1)
+    {
+        // Corrupted frame, ignore it
+        fprintf(stderr, "<SEND_%d>:Ignore past ack\n", sender->send_id);
+        free(ack_frame);
+        return;
+    }
+
     // printf("<SEND_%d>: received ACK %d\n", sender->send_id, ack_frame->ack_num);
 
-    ack_frame->ack_num %= 128;
+    ack_frame->ack_num %= MAX_SEQ_NUM;
     // 如果base - 1 == ack，意味着收到重复ack，重传
     // if (ack_frame->ack_num == sender->base - 1)
     // {
@@ -80,7 +97,7 @@ void handle_incoming_acks(Sender *sender,
 
             int len = ack_frame->ack_num + 1 - sender->base;
             sender->base += len;
-            sender->base %= 128;
+            sender->base %= MAX_SEQ_NUM;
             sender->window_base += len;
             sender->window_base %= sender->window_size;
             fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
@@ -101,7 +118,7 @@ void handle_incoming_acks(Sender *sender,
 
                 int len = ack_frame->ack_num + 1 - sender->base;
                 sender->base += len;
-                sender->base %= 128;
+                sender->base %= MAX_SEQ_NUM;
                 sender->window_base += len;
                 sender->window_base %= sender->window_size;
                 fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
@@ -144,7 +161,7 @@ void handle_input_cmds(Sender *sender,
 {
     int input_cmd_length = ll_get_length(sender->input_cmdlist_head);
     // Recheck the command queue length to see if stdin_thread dumped a command on us
-    while (input_cmd_length > 0 && sender->next_seq_num < (sender->base + sender->window_size) % 128)
+    while (input_cmd_length > 0 && sender->next_seq_num < (sender->base + sender->window_size) % MAX_SEQ_NUM)
     {
         // Pop a node off and update the input_cmd_length
         LLnode *ll_input_cmd_node = ll_pop_node(&sender->input_cmdlist_head);
@@ -188,7 +205,7 @@ void handle_input_cmds(Sender *sender,
             msg_ptr += payload_length;
 
             // 计算当前窗口内已发送长度
-            int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : 128 - sender->base + sender->next_seq_num;
+            int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : MAX_SEQ_NUM - sender->base + sender->next_seq_num;
             int pos = (sender->window_base + len - 1) % sender->window_size;
             sender->output_frames[pos] = *outgoing_frame;
             // printf("sender->next_seq_num:%d\n",sender->next_seq_num );
@@ -216,12 +233,12 @@ void handle_input_cmds(Sender *sender,
 void handle_timedout_frames(Sender *sender,
                             LLnode **outgoing_frames_head_ptr)
 {
-    uint16_t mask = 0xFFFF >> sender->window_size;
-    uint16_t state = sender->output_state & mask;
+    uint8_t mask = 0xFFFF >> sender->window_size;
+    uint8_t state = sender->output_state & mask;
     if (state == 0)
         return;
     int i;
-    int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : 128 - sender->base + sender->next_seq_num;
+    int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : MAX_SEQ_NUM - sender->base + sender->next_seq_num;
     for (i = sender->window_base; i < sender->window_base + len; i++)
     {
         // 判断该帧正在发送

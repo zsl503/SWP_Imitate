@@ -39,6 +39,14 @@ void handle_incoming_msgs(Receiver *receiver,
             return;
         }
 
+        if (inframe->dst_port != receiver->recv_id)
+        {
+            // Corrupted frame, ignore it
+            ll_destroy_node(ll_inmsg_node);
+            fprintf(stderr, "\t<RECV-%d>:Recv msg for others\n",receiver->recv_id);
+            return;
+        }
+
         if (inframe->seq_num > receiver->base)
         {
             fprintf(stderr, "\t<RECV-%d>:Recv an overbase msg [%s]\n",receiver->recv_id, inframe->data);            
@@ -47,7 +55,7 @@ void handle_incoming_msgs(Receiver *receiver,
         }
 
         if(inframe->seq_num == receiver->base){
-            receiver->base = (receiver->base + 1) % 128;
+            receiver->base = (receiver->base + 1) % MAX_SEQ_NUM;
             printf("<RECV-%d>:[%s]\n", receiver->recv_id, inframe->data);
             fprintf(stderr, "<RECV-%d>:Recv right msg [%s] crc:%d\n",receiver->recv_id, inframe->data, compute_crc(inframe));            
         }
