@@ -165,6 +165,7 @@ int main(int argc, char *argv[])
                             NULL,
                             run_sender,
                             (void *) &glb_senders_array[i]);
+
         if (rc){
             fprintf(stderr, "ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);

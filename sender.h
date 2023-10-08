@@ -20,4 +20,11 @@
 void init_sender(Sender *, int);
 void * run_sender(void *);
 
+
+/// @brief 设置sender的最早到期时间
+/// @param sender 要设置的sender
+/// @param expiring_timeval 新时间
+/// @return 若更改，则返回1，否则返回0
+int set_sender_expiring_timeval(Sender *sender, struct timeval *expiring_timeval);
+
 #endif

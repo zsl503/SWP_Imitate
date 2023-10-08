@@ -10,12 +10,17 @@ void init_sender(Sender *sender, int id)
     sender->base = 0;
     sender->next_seq_num = 0;
     sender->window_size = 10;
+
+    sender->window_base = 0;
+    sender->output_state = 0;
+
+    sender->timeout_duration = 100000;
 }
 
 struct timeval *sender_get_next_expiring_timeval(Sender *sender)
 {
     // TODO: You should fill in this function so that it returns the next timeout that should occur
-    return NULL;
+    return sender->expiring_timeval.tv_sec == 0 && sender->expiring_timeval.tv_usec == 0 ? NULL : &sender->expiring_timeval;
 }
 
 void handle_incoming_acks(Sender *sender,
@@ -37,8 +42,8 @@ void handle_incoming_acks(Sender *sender,
     }
 
     // Convert the char * buffer to a Frame data type
-    Frame *ack_frame = (Frame *)ack_node->value;
-    free(ack_node);
+    Frame *ack_frame = convert_char_to_frame(ack_node->value);
+    ll_destroy_node(ack_node);
 
     // Check whether the frame is corrupted
     // Check whether the frame is for this sender
@@ -46,36 +51,100 @@ void handle_incoming_acks(Sender *sender,
     if (is_corrupted(ack_frame) || ack_frame->dst_port != sender->send_id || ack_frame->ack_num < sender->base - 1)
     {
         // Corrupted frame, ignore it
+        fprintf(stderr, "<SEND_%d>:Recv corrupted ack\n", sender->send_id);
         free(ack_frame);
         return;
     }
 
     // printf("<SEND_%d>: received ACK %d\n", sender->send_id, ack_frame->ack_num);
 
+    ack_frame->ack_num %= 128;
     // 如果base - 1 == ack，意味着收到重复ack，重传
-    if (ack_frame->ack_num == sender->base - 1)
-    {
-        // ACK is for the base frame
-        sender->next_seq_num = sender->base;
-    }
-    else if (ack_frame->ack_num >= sender->base && ack_frame->ack_num < sender->next_seq_num)
-    {
-        sender->base = (ack_frame->ack_num + 1) % 128;
-    }
-    else
+    // if (ack_frame->ack_num == sender->base - 1)
+    // {
+    //     // ACK is for the base frame
+    //     sender->next_seq_num = sender->base;
+    //     // setting sender state
+    //     sender->output_state = 0;
+    //     sender->window_base = 0;
+    // }
+    // else
+    if (sender->base <= sender->next_seq_num)
     {
         // 非法ack值，输出错误信息
-        printf("<SEND_%d>: received an invalid ACK value %d\n", sender->send_id, ack_frame->ack_num);
+        if (ack_frame->ack_num >= sender->next_seq_num)
+            fprintf(stderr, "<SEND_%d>: received an invalid ACK value %d\n", sender->send_id, ack_frame->ack_num);
+        else if (ack_frame->ack_num >= sender->base &&
+                 ack_frame->ack_num < sender->next_seq_num)
+        {
+
+            int len = ack_frame->ack_num + 1 - sender->base;
+            sender->base += len;
+            sender->base %= 128;
+            sender->window_base += len;
+            sender->window_base %= sender->window_size;
+            fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
+        }
+        else
+        {
+            fprintf(stderr, "<SEND_%d>: Ignore an unused ACK %d.\n", sender->send_id, ack_frame->ack_num);
+        }
+    }
+    else if (sender->base > sender->next_seq_num)
+    {
+        // 非法ack值，输出错误信息
+        if (ack_frame->ack_num >= sender->next_seq_num && ack_frame->ack_num < sender->base)
+            fprintf(stderr, "<SEND_%d>: received an invalid ACK value %d\n", sender->send_id, ack_frame->ack_num);
+        else if (ack_frame->ack_num >= sender->base ||
+                 ack_frame->ack_num < sender->next_seq_num)
+        {
+
+                int len = ack_frame->ack_num + 1 - sender->base;
+                sender->base += len;
+                sender->base %= 128;
+                sender->window_base += len;
+                sender->window_base %= sender->window_size;
+                fprintf(stderr, "<SEND_%d>: Received ACK %d\n", sender->send_id, ack_frame->ack_num);
+        }
+        else
+        {
+            fprintf(stderr, "<SEND_%d>: Ignore an unused ACK %d.\n", sender->send_id, ack_frame->ack_num);
+        }
     }
 }
+
+struct timeval get_expiring_timeval(long timeout_duration)
+{
+    struct timeval curr_timeval, expiring_timeval;
+    gettimeofday(&curr_timeval, NULL);
+    expiring_timeval.tv_sec = curr_timeval.tv_sec + timeout_duration / 1000000;
+    expiring_timeval.tv_usec = curr_timeval.tv_usec + timeout_duration % 1000000;
+    if (expiring_timeval.tv_usec >= 1000000)
+    {
+        expiring_timeval.tv_sec++;
+        expiring_timeval.tv_usec -= 1000000;
+    }
+    return expiring_timeval;
+}
+
+int set_sender_expiring_timeval(Sender *sender, struct timeval *expiring_timeval)
+{
+    if (sender->expiring_timeval.tv_sec > expiring_timeval->tv_sec ||
+        (sender->expiring_timeval.tv_sec == expiring_timeval->tv_sec &&
+         sender->expiring_timeval.tv_usec > expiring_timeval->tv_usec))
+    {
+        sender->expiring_timeval = *expiring_timeval;
+        return 1;
+    }
+    return 0;
+};
 
 void handle_input_cmds(Sender *sender,
                        LLnode **outgoing_frames_head_ptr)
 {
     int input_cmd_length = ll_get_length(sender->input_cmdlist_head);
-
     // Recheck the command queue length to see if stdin_thread dumped a command on us
-    while (input_cmd_length > 0 && sender->next_seq_num < sender->base + sender->window_size)
+    while (input_cmd_length > 0 && sender->next_seq_num < (sender->base + sender->window_size) % 128)
     {
         // Pop a node off and update the input_cmd_length
         LLnode *ll_input_cmd_node = ll_pop_node(&sender->input_cmdlist_head);
@@ -88,7 +157,6 @@ void handle_input_cmds(Sender *sender,
         // Split the message into multiple frames if necessary
         char *msg_ptr = outgoing_cmd->message;
         int remaining_bytes = msg_length;
-
         while (remaining_bytes > 0)
         {
             // Compute the length of the payload for this frame
@@ -106,25 +174,79 @@ void handle_input_cmds(Sender *sender,
             // Compute CRC and add to frame
             outgoing_frame->crc = compute_crc(outgoing_frame);
 
-            ll_append_node(outgoing_frames_head_ptr, (void * )outgoing_frame);
+            // curr_time + sender.timeout_duration
+
+            outgoing_frame->expiring_timeval = get_expiring_timeval(sender->timeout_duration);
+            set_sender_expiring_timeval(sender, &outgoing_frame->expiring_timeval);
+            ll_append_node(outgoing_frames_head_ptr, (void *)outgoing_frame);
+
+            fprintf(stderr, "<SEND_%d>: Begin send msg [%s] crc:%d\n", sender->send_id, outgoing_frame->data, compute_crc(outgoing_frame));
 
             // Update sender state
             sender->next_seq_num++;
             remaining_bytes -= payload_length;
             msg_ptr += payload_length;
+
+            // 计算当前窗口内已发送长度
+            int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : 128 - sender->base + sender->next_seq_num;
+            int pos = (sender->window_base + len - 1) % sender->window_size;
+            sender->output_frames[pos] = *outgoing_frame;
+            // printf("sender->next_seq_num:%d\n",sender->next_seq_num );
+            // printf("sender->base:%d\n",sender->base);
+            // printf("len:%d\n",len);
+            // printf("pos:%d\n",pos);
+            // printf("orgin state:%d\n",sender->output_state);
+            sender->output_state |= (1 << pos);
+            // printf("set state:%d\n",sender->output_state);
         }
         // Free the outgoing command
         ll_destroy_node(ll_input_cmd_node);
     }
 }
 
+// void handle_timedout_frames(Sender *sender,
+//                             LLnode **outgoing_frames_head_ptr)
+// {
+//     // TODO: Suggested steps for handling timed out datagrams
+//     //     1) Iterate through the sliding window protocol information you maintain for each receiver
+//     //     2) Locate frames that are timed out and add them to the outgoing frames
+//     //     3) Update the next timeout field on the outgoing frames
+// }
+
 void handle_timedout_frames(Sender *sender,
                             LLnode **outgoing_frames_head_ptr)
 {
-    // TODO: Suggested steps for handling timed out datagrams
-    //     1) Iterate through the sliding window protocol information you maintain for each receiver
-    //     2) Locate frames that are timed out and add them to the outgoing frames
-    //     3) Update the next timeout field on the outgoing frames
+    uint16_t mask = 0xFFFF >> sender->window_size;
+    uint16_t state = sender->output_state & mask;
+    if (state == 0)
+        return;
+    int i;
+    int len = sender->next_seq_num >= sender->base ? sender->next_seq_num - sender->base : 128 - sender->base + sender->next_seq_num;
+    for (i = sender->window_base; i < sender->window_base + len; i++)
+    {
+        // 判断该帧正在发送
+        int pos = i % sender->window_size;
+        if (state | 1)
+        {
+            // 判断超时
+            struct timeval curr_timeval;
+            gettimeofday(&curr_timeval, NULL);
+            // 判断是否超时
+            // printf("i:%d\n",i);
+            if (timeval_usecdiff(&sender->output_frames[pos].expiring_timeval, &curr_timeval) > 0)
+            {
+                // 超时，重传
+                fprintf(stderr, "<SEND_%d>: Frame [%s] timeout\n", sender->send_id, sender->output_frames[pos].data);
+
+                sender->output_frames[pos].expiring_timeval = get_expiring_timeval(sender->timeout_duration);
+                set_sender_expiring_timeval(sender, &sender->output_frames[pos].expiring_timeval);
+                Frame *outgoing_frame = (Frame *)malloc(sizeof(Frame));
+                memcpy(outgoing_frame, &sender->output_frames[pos], sizeof(Frame));
+                ll_append_node(outgoing_frames_head_ptr, (void *)outgoing_frame);
+            }
+        }
+        state >>= 1;
+    }
 }
 
 void *run_sender(void *input_sender)
@@ -212,7 +334,6 @@ void *run_sender(void *input_sender)
                                    &sender->buffer_mutex,
                                    &time_spec);
         }
-
         // Implement this   ack输入
         handle_incoming_acks(sender,
                              &outgoing_frames_head);
@@ -233,7 +354,7 @@ void *run_sender(void *input_sender)
         while (ll_outgoing_frame_length > 0)
         {
             LLnode *ll_outframe_node = ll_pop_node(&outgoing_frames_head);
-            char *char_buf = convert_frame_to_char((Frame * )ll_outframe_node->value);
+            char *char_buf = convert_frame_to_char((Frame *)ll_outframe_node->value);
 
             // Don't worry about freeing the char_buf, the following function does that
             send_msg_to_receivers(char_buf);

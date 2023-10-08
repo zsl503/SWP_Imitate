@@ -2,9 +2,7 @@
 
 int is_corrupted(Frame * frame)
 {
-    uint16_t crc = frame->crc;
-    frame->crc = 0;
-    if(compute_crc(frame) != crc)
+    if(compute_crc(frame) != frame->crc)
         return 1;
     return 0;
 }
@@ -12,6 +10,8 @@ int is_corrupted(Frame * frame)
 
 uint16_t compute_crc(Frame * frame)
 {
+    uint16_t tmpcrc = frame->crc;
+    frame->crc = 0;
     char * buffer = convert_frame_to_char(frame);
     uint16_t crc = 0xFFFF;
     uint8_t * data = (uint8_t *) buffer;
@@ -28,7 +28,8 @@ uint16_t compute_crc(Frame * frame)
             }
         }
     }
-    free(buffer);    
+    free(buffer);
+    frame->crc = tmpcrc;
     return crc;
 }
 

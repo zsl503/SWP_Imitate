@@ -17,7 +17,40 @@
 #define MAX_COMMAND_LENGTH 16
 #define AUTOMATED_FILENAME 512
 #define MAX_WINDOW_SIZE 10
+#define MAX_TIMEOUT 1000000
+
 typedef unsigned char uchar_t;
+
+#define MAX_FRAME_SIZE 64
+#define SLIDE_WINDOW_SIZE 4
+#define FRAME_PAYLOAD_SIZE 48
+
+// 64 - 48 = 16 - 8 = 8
+// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
+// |  src   |   dst  |Seq num | ack num | state | windows| ext   |  crc  |  Check  |
+// |        |        |        |         |       |  size  | data  |       |  data   |
+// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
+// |  1byte | 1byte  | 1byte  | 1byte   | 1byte | 1byte  | 8byte |2bytes |  48byte |
+// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
+
+struct Frame_t
+{
+    uint8_t src_port;      // 源端口
+    uint8_t dst_port;      // 目的端口
+    uint8_t seq_num;        // 帧的序号
+    uint8_t ack_num;        // 确认号
+    uint8_t state;     // 帧的状态指示
+    uint8_t window_size;    // 窗口大小
+
+    uint64_t ext;       // 扩展数据 
+
+    uint16_t crc;       // 校验和
+    char data[FRAME_PAYLOAD_SIZE];  // 数据
+    struct timeval expiring_timeval;    // 发送时间
+};
+typedef struct Frame_t Frame;
+
+
 
 //System configuration information
 struct SysConfig_t
@@ -88,13 +121,18 @@ struct Sender_t
     pthread_mutex_t buffer_mutex;
     pthread_cond_t buffer_cv;    
     LLnode * input_cmdlist_head;    // 以Cmd指针存放
-    LLnode * input_framelist_head;  // 以Frame指针存放
+    LLnode * input_framelist_head;  // 以Char指针存放
     int send_id; // 对应于port
+
+    Frame output_frames[MAX_WINDOW_SIZE];  // 以Frame指针存放
+    uint16_t output_state;
+    uint8_t window_base;
 
     uint8_t base;  // 窗口的基序号，即最大已确认帧+1
     uint8_t next_seq_num;
     uint8_t window_size;
-    struct timeval current_timeval;
+    struct timeval expiring_timeval;
+    long timeout_duration; // 微秒
 };
 
 enum SendFrame_DstType 
@@ -107,37 +145,7 @@ typedef struct Sender_t Sender;
 typedef struct Receiver_t Receiver;
 
 
-#define MAX_FRAME_SIZE 64
 
-#define SLIDE_WINDOW_SIZE 4
-
-//TODO: You should change this!
-//Remember, your frame can be AT MOST 32 bytes!
-#define FRAME_PAYLOAD_SIZE 48
-
-// 64 - 48 = 16 - 8 = 8
-// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
-// |  src   |   dst  |Seq num | ack num | state | windows| ext   |  crc  |  Check  |
-// |        |        |        |         |       |  size  | data  |       |  data   |
-// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
-// |  1byte | 1byte  | 1byte  | 1byte   | 1byte | 1byte  | 8byte |2bytes |  48byte |
-// +--------+--------+--------+---------+-------+--------+-------+-------+---------+
-
-struct Frame_t
-{
-    uint8_t src_port;      // 源端口
-    uint8_t dst_port;      // 目的端口
-    uint8_t seq_num;        // 帧的序号
-    uint8_t ack_num;        // 确认号
-    uint8_t state;     // 帧的状态指示
-    uint8_t window_size;    // 窗口大小
-
-    uint64_t ext;       // 扩展数据 
-
-    uint16_t crc;       // 校验和
-    char data[FRAME_PAYLOAD_SIZE];  // 数据
-};
-typedef struct Frame_t Frame;
 
 //Declare global variables here
 //DO NOT CHANGE: 

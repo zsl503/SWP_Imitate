@@ -35,20 +35,25 @@ void handle_incoming_msgs(Receiver *receiver,
         {
             // Corrupted frame, ignore it
             ll_destroy_node(ll_inmsg_node);
+            fprintf(stderr, "\t<RECV-%d>:Recv corrupted msg\n",receiver->recv_id);
             return;
         }
 
         if (inframe->seq_num > receiver->base)
         {
+            fprintf(stderr, "\t<RECV-%d>:Recv an overbase msg [%s]\n",receiver->recv_id, inframe->data);            
             ll_destroy_node(ll_inmsg_node);
             return;
         }
 
         if(inframe->seq_num == receiver->base){
             receiver->base = (receiver->base + 1) % 128;
+            printf("<RECV-%d>:[%s]\n", receiver->recv_id, inframe->data);
+            fprintf(stderr, "<RECV-%d>:Recv right msg [%s] crc:%d\n",receiver->recv_id, inframe->data, compute_crc(inframe));            
         }
-        printf("<RECV-%d>:[%s]\n", receiver->recv_id, inframe->data);
-
+        else{
+            fprintf(stderr, "<RECV-%d>:Ignore past msg [%s]\n",receiver->recv_id, inframe->data);            
+        }
         // send ack        
         Frame *outgoing_frame = (Frame *)malloc(sizeof(Frame));
         memset((void *)outgoing_frame, 0, sizeof(Frame));
