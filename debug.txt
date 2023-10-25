@@ -1,0 +1,331 @@
+Messages will be dropped with probability=0.000000
+Messages will be corrupted with probability=0.500000
+Available sender id(s):
+   send_id=0
+   send_id=1
+   send_id=2
+   send_id=3
+   send_id=4
+Available receiver id(s):
+   recv_id=0
+   recv_id=1
+   recv_id=2
+   recv_id=3
+   recv_id=4
+<SEND_0>: Begin send msg [cadcac] crc:62928
+	<RECV-0>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+<SEND_2>: Begin send msg [dcdcfcf] crc:60530
+	<RECV-0>:Recv msg for others
+	<RECV-1>:Recv msg for others
+	<RECV-2>:Recv msg for others
+<RECV-3>:[dcdcfcf]
+	<Out-windows 3> pos:0 end_pos:1, len:1
+	<Out-windows 3> 0:[dcdcfcf]
+	<Out-windows 3> 1:[]
+	<Out-windows 3> 2:[]
+	<Out-windows 3> 3:[]
+	<Out-windows 3> 4:[]
+	<Out-windows 3> 5:[]
+	<Out-windows 3> 6:[]
+	<Out-windows 3> 7:[]
+	<RECV-3>: Received Seq 0 ,crc 60530, back ack's crc 42147
+	<RECV-4>:Recv msg for others
+<SEND_0>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_3>: Begin send msg [decedcfcffvcf] crc:8320
+<RECV-0>:[decedcfcffvcf]
+	<Out-windows 0> pos:0 end_pos:1, len:1
+	<Out-windows 0> 0:[decedcfcffvcf]
+	<Out-windows 0> 1:[]
+	<Out-windows 0> 2:[]
+	<Out-windows 0> 3:[]
+	<Out-windows 0> 4:[]
+	<Out-windows 0> 5:[]
+	<Out-windows 0> 6:[]
+	<Out-windows 0> 7:[]
+	<RECV-0>: Received Seq 0 ,crc 8320, back ack's crc 29171
+	<RECV-1>:Recv msg for others
+	<RECV-2>:Recv msg for others
+	<RECV-3>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_0>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+	<RECV-3>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-3>:Recv msg for others
+	<RECV-0>:Outside Seq 0
+	<RECV-1>:Recv msg for others
+	<RECV-2>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_4>:Recv ack for others
+<SEND_2>:Recv ack for others
+<SEND_1>:Recv ack for others
+<SEND_0>:Recv ack for others
+<SEND_3>: Received ACK 0
+<SEND_0>: Begin send msg [xcsdcfcfcf] crc:13760
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+<RECV-1>:[cadcac]
+	<Out-windows 1> pos:0 end_pos:1, len:1
+	<Out-windows 1> 0:[cadcac]
+	<Out-windows 1> 1:[]
+	<Out-windows 1> 2:[]
+	<Out-windows 1> 3:[]
+	<Out-windows 1> 4:[]
+	<Out-windows 1> 5:[]
+	<Out-windows 1> 6:[]
+	<Out-windows 1> 7:[]
+	<RECV-1>: Received Seq 0 ,crc 62928, back ack's crc 48385
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv msg for others
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv msg for others
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv msg for others
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv msg for others
+<SEND_1>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_0>:Recv corrupted ack
+	<RECV-3>:Recv msg for others
+	<RECV-3>:Recv corrupted msg.
+	<RECV-2>:Recv msg for others
+	<RECV-2>:Recv corrupted msg.
+	<RECV-4>:Recv msg for others
+	<RECV-4>:Recv corrupted msg.
+<RECV-0>:[xcsdcfcfcf]
+	<Out-windows 0> pos:0 end_pos:1, len:1
+	<Out-windows 0> 0:[xcsdcfcfcf]
+	<Out-windows 0> 1:[]
+	<Out-windows 0> 2:[]
+	<Out-windows 0> 3:[]
+	<Out-windows 0> 4:[]
+	<Out-windows 0> 5:[]
+	<Out-windows 0> 6:[]
+	<Out-windows 0> 7:[]
+	<RECV-0>: Received Seq 0 ,crc 13760, back ack's crc 29120
+	<RECV-0>:Recv corrupted msg.
+<SEND_4>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+	<RECV-1>:Recv msg for others
+	<RECV-1>:Recv corrupted msg.
+<SEND_0>:Recv corrupted ack
+	<RECV-1>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-1>:Recv msg for others
+	<RECV-1>:Recv corrupted msg.
+	<RECV-0>:Outside Seq 0
+	<RECV-0>:Recv corrupted msg.
+	<RECV-2>:Recv msg for others
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv msg for others
+	<RECV-3>:Recv corrupted msg.
+	<RECV-4>:Recv msg for others
+	<RECV-4>:Recv corrupted msg.
+<SEND_2>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_0>:Recv corrupted ack
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-3>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Outside Seq 0
+	<RECV-0>:Recv corrupted msg.
+	<RECV-1>:Recv msg for others
+	<RECV-1>:Recv corrupted msg.
+	<RECV-2>:Recv msg for others
+	<RECV-2>:Recv corrupted msg.
+	<RECV-3>:Recv msg for others
+	<RECV-3>:Recv corrupted msg.
+	<RECV-4>:Recv msg for others
+	<RECV-4>:Recv corrupted msg.
+<SEND_4>:Recv ack for others
+<SEND_3>:Recv ack for others
+<SEND_1>:Recv ack for others
+<SEND_2>:Recv ack for others
+<SEND_0>: Received ACK 0
+<SEND_4>: Begin send msg [csdcfcvfvfvgrvgf] crc:1745
+	<RECV-0>:Recv msg for others
+<RECV-1>:[csdcfcvfvfvgrvgf]
+	<Out-windows 1> pos:0 end_pos:1, len:1
+	<Out-windows 1> 0:[csdcfcvfvfvgrvgf]
+	<Out-windows 1> 1:[]
+	<Out-windows 1> 2:[]
+	<Out-windows 1> 3:[]
+	<Out-windows 1> 4:[]
+	<Out-windows 1> 5:[]
+	<Out-windows 1> 6:[]
+	<Out-windows 1> 7:[]
+	<RECV-1>: Received Seq 0 ,crc 1745, back ack's crc 32068
+	<RECV-2>:Recv msg for others
+	<RECV-3>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_0>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_4>: Begin send msg [dcwdcwesa] crc:1762
+	<RECV-1>:Recv msg for others
+	<RECV-3>:Recv msg for others
+<RECV-2>:[dcwdcwesa]
+	<Out-windows 2> pos:0 end_pos:1, len:1
+	<Out-windows 2> 0:[dcwdcwesa]
+	<Out-windows 2> 1:[]
+	<Out-windows 2> 2:[]
+	<Out-windows 2> 3:[]
+	<Out-windows 2> 4:[]
+	<Out-windows 2> 5:[]
+	<Out-windows 2> 6:[]
+	<Out-windows 2> 7:[]
+	<RECV-2>: Received Seq 0 ,crc 1762, back ack's crc 26628
+<SEND_0>:Recv ack for others
+<SEND_1>:Recv ack for others
+	<RECV-4>:Recv msg for others
+	<RECV-0>:Recv msg for others
+<SEND_2>:Recv ack for others
+<SEND_3>:Recv ack for others
+<SEND_4>: Received ACK 0
+Command is ill-formatted
+<SEND_1>: Begin send msg [dwcsdcsdcdcdc] crc:14609
+	<RECV-0>:Recv msg for others
+	<RECV-3>:Recv msg for others
+	<RECV-2>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<RECV-1>:[dwcsdcsdcdcdc]
+	<Out-windows 1> pos:0 end_pos:1, len:1
+	<Out-windows 1> 0:[dwcsdcsdcdcdc]
+	<Out-windows 1> 1:[]
+	<Out-windows 1> 2:[]
+	<Out-windows 1> 3:[]
+	<Out-windows 1> 4:[]
+	<Out-windows 1> 5:[]
+	<Out-windows 1> 6:[]
+	<Out-windows 1> 7:[]
+	<RECV-1>: Received Seq 0 ,crc 14609, back ack's crc 32017
+<SEND_4>:Recv ack for others
+<SEND_2>:Recv ack for others
+<SEND_0>:Recv ack for others
+<SEND_3>:Recv ack for others
+<SEND_1>: Received ACK 0
+Command is ill-formatted
+Command is ill-formatted
+<SEND_1>: Begin send msg [dcsdcdecdcs] crc:63745
+<RECV-0>:[dcsdcdecdcs]
+	<Out-windows 0> pos:0 end_pos:1, len:1
+	<Out-windows 0> 0:[dcsdcdecdcs]
+	<Out-windows 0> 1:[]
+	<Out-windows 0> 2:[]
+	<Out-windows 0> 3:[]
+	<Out-windows 0> 4:[]
+	<Out-windows 0> 5:[]
+	<Out-windows 0> 6:[]
+	<Out-windows 0> 7:[]
+	<RECV-0>: Received Seq 0 ,crc 63745, back ack's crc 45520
+	<RECV-1>:Recv msg for others
+	<RECV-2>:Recv msg for others
+	<RECV-3>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_0>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_1>:Recv corrupted ack
+	<RECV-3>:Recv corrupted msg.
+	<RECV-2>:Recv corrupted msg.
+	<RECV-1>:Recv corrupted msg.
+	<RECV-4>:Recv corrupted msg.
+	<RECV-0>:Recv corrupted msg.
+	<RECV-3>:Recv msg for others
+	<RECV-0>:Outside Seq 0
+	<RECV-1>:Recv msg for others
+	<RECV-2>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_4>:Recv ack for others
+<SEND_3>:Recv ack for others
+<SEND_2>:Recv ack for others
+<SEND_1>: Received ACK 0
+<SEND_0>:Recv ack for others
+<SEND_0>: Begin send msg [dcxsdcsd] crc:9425
+	<RECV-0>:Recv msg for others
+<RECV-1>:[dcxsdcsd]
+	<Out-windows 1> pos:1 end_pos:2, len:1
+	<Out-windows 1> 0:[cadcac]
+	<Out-windows 1> 1:[dcxsdcsd]
+	<Out-windows 1> 2:[]
+	<Out-windows 1> 3:[]
+	<Out-windows 1> 4:[]
+	<Out-windows 1> 5:[]
+	<Out-windows 1> 6:[]
+	<Out-windows 1> 7:[]
+	<RECV-1>: Received Seq 1 ,crc 9425, back ack's crc 32060
+	<RECV-2>:Recv msg for others
+	<RECV-3>:Recv msg for others
+	<RECV-4>:Recv msg for others
+<SEND_1>:Recv corrupted ack
+<SEND_2>:Recv corrupted ack
+<SEND_3>:Recv corrupted ack
+<SEND_4>:Recv corrupted ack
+<SEND_0>:Recv corrupted ack

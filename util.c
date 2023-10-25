@@ -158,8 +158,8 @@ char * convert_frame_to_char(Frame * frame)
     char * char_buf = (char *) malloc(MAX_FRAME_SIZE);
     memset(char_buf, 0, MAX_FRAME_SIZE);
 
-    memcpy(char_buf, &frame->src_port, sizeof(uint8_t));
-    memcpy(char_buf + sizeof(uint8_t), &frame->dst_port, sizeof(uint8_t));
+    memcpy(char_buf, &frame->src_id, sizeof(uint8_t));
+    memcpy(char_buf + sizeof(uint8_t), &frame->dst_id, sizeof(uint8_t));
     memcpy(char_buf + 2 * sizeof(uint8_t), &frame->seq_num, sizeof(uint8_t));
     memcpy(char_buf + 3 * sizeof(uint8_t), &frame->ack_num, sizeof(uint8_t));
     memcpy(char_buf + 4 * sizeof(uint8_t), &frame->state, sizeof(uint8_t));
@@ -177,8 +177,8 @@ Frame * convert_char_to_frame(char * char_buf)
     //TODO: You should implement this as necessary
     Frame * frame = (Frame *) malloc(sizeof(Frame));
 
-    memcpy(&frame->src_port, char_buf, sizeof(uint8_t));
-    memcpy(&frame->dst_port, char_buf + sizeof(uint8_t), sizeof(uint8_t));
+    memcpy(&frame->src_id, char_buf, sizeof(uint8_t));
+    memcpy(&frame->dst_id, char_buf + sizeof(uint8_t), sizeof(uint8_t));
     memcpy(&frame->seq_num, char_buf + 2 * sizeof(uint8_t), sizeof(uint8_t));
     memcpy(&frame->ack_num, char_buf + 3 * sizeof(uint8_t), sizeof(uint8_t));
     memcpy(&frame->state, char_buf + 4 * sizeof(uint8_t), sizeof(uint8_t));

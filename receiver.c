@@ -1,12 +1,22 @@
 #include "receiver.h" // receiver.h
 
+#define WINDOW_ADD(x, y, z) ((x + y) % z)
+#define WINDOW_SUB(x, y, z) ((x + z - y) % z)
+#define SEQ_ADD(x, y) ((x + y) % MAX_SEQ_NUM)
+#define SEQ_SUB(x, y) ((x + MAX_SEQ_NUM - y) % MAX_SEQ_NUM)
+
 void init_receiver(Receiver *receiver,
                    int id)
 {
     receiver->recv_id = id;
     receiver->input_framelist_head = NULL;
-    receiver->window_size = 4;
-    receiver->next_seq = 0;
+    receiver->receiver_one = (struct Receiver_one *)malloc(sizeof(struct Receiver_one) * glb_senders_array_length);
+
+    int i = 0;
+    for (; i < glb_senders_array_length; i++)
+    {
+        receiver->receiver_one[i].window_size = 8;
+    }
 }
 
 void handle_incoming_msgs(Receiver *receiver,
@@ -33,15 +43,23 @@ void handle_incoming_msgs(Receiver *receiver,
         //                     Is this an old, retransmitted message?
         Frame *inframe = convert_char_to_frame((char *)ll_inmsg_node->value);
         ll_destroy_node(ll_inmsg_node);
+
         if (is_corrupted(inframe))
         {
             // Corrupted frame, ignore it
-            fprintf(stderr, "\t<RECV-%d>:Recv corrupted msg\n", receiver->recv_id);
+            fprintf(stderr, "\t<RECV-%d>:Recv corrupted msg.\n", receiver->recv_id);
             free(inframe);
             return;
         }
 
-        if (inframe->dst_port != receiver->recv_id)
+        if ((inframe->state | 0b00000001) == 0)
+        {
+            fprintf(stderr, "<RECV-%d>:Unused seq.\n", receiver->recv_id);
+            free(inframe);
+            return;
+        }
+
+        if (inframe->dst_id != receiver->recv_id)
         {
             fprintf(stderr, "\t<RECV-%d>:Recv msg for others\n", receiver->recv_id);
             free(inframe);
@@ -49,67 +67,98 @@ void handle_incoming_msgs(Receiver *receiver,
         }
 
         inframe->seq_num %= MAX_SEQ_NUM;
-        uint8_t border = (receiver->base + receiver->window_size) % MAX_SEQ_NUM;
-
-        if ((receiver->base <= border && inframe->seq_num >= receiver->base && inframe->seq_num < border) ||
-            (receiver->base > border && (inframe->seq_num >= receiver->base || inframe->seq_num < border)))
+        uint8_t src_id = inframe->src_id;
+        struct Receiver_one *recv_one = &receiver->receiver_one[src_id];
+        int len = SEQ_SUB(inframe->seq_num, recv_one->base);
+        if (len < recv_one->window_size)
         {
+            int pos = WINDOW_ADD(recv_one->window_base, len, recv_one->window_size);
             Frame *outgoing_frame = (Frame *)malloc(sizeof(Frame));
             memset((void *)outgoing_frame, 0, sizeof(Frame));
-            outgoing_frame->src_port = receiver->recv_id;
-            outgoing_frame->dst_port = inframe->src_port;
-            outgoing_frame->seq_num = 0;
-            outgoing_frame->window_size = receiver->window_size;
+            outgoing_frame->src_id = receiver->recv_id;
+            outgoing_frame->dst_id = inframe->src_id;
+            outgoing_frame->window_size = recv_one->window_size;
 
-            int pos = inframe->seq_num % receiver->window_size;
-            receiver->recv_state |= (1 << pos); // 对应位置1
-            if (inframe->seq_num == receiver->next_seq)
+            memcpy(&recv_one->recv_frames[pos], inframe, sizeof(Frame));
+            recv_one->recv_state |= (1 << pos); // 对应位置1
+
+            if (len == 0) // 移动窗口
             {
-                uint8_t mask = 0xFF >> (8 - receiver->window_size);
-                uint8_t state = receiver->recv_state & mask;
-                if (state == mask)
+                uint8_t mask = 0xFF >> (8 - recv_one->window_size);
+                uint8_t state = recv_one->recv_state & mask;
+                if (state == mask) // 满了
                 {
-                    receiver->recv_state = 0;
-                    receiver->next_seq = (receiver->base + receiver->window_size) % MAX_SEQ_NUM;
-                    receiver->base = (receiver->base + receiver->window_size) % MAX_SEQ_NUM;
+                    recv_one->recv_state = 0;
+                    recv_one->base = SEQ_ADD(recv_one->base, recv_one->window_size);
                 }
                 else
                 {
-                    // 从recv_state中获取第一个不为0的值
-                    int biggest_ack = 0;
-                    while (state & 1)
+                    uint8_t wb_tmp = recv_one->window_base;
+                    uint8_t tmp = 1 << recv_one->window_base;
+                    while (tmp)
                     {
-                        biggest_ack++;
-                        state >>= 1;
+                        if (tmp & state) // 等于1说明已经收到了，否则未收到
+                        {
+                            recv_one->recv_state &= ~tmp; // 置0
+                            recv_one->base = SEQ_ADD(recv_one->base, 1);
+                            recv_one->window_base = WINDOW_ADD(recv_one->window_base, 1, recv_one->window_size);
+                        }
+                        else
+                        {
+                            wb_tmp = 0; // 不需要下面从头开始的查找了
+                            break;
+                        }
+                        tmp <<= 1;
                     }
-                    receiver->next_seq = (receiver->base + biggest_ack) % MAX_SEQ_NUM;
+                    tmp = 1;
+                    while (wb_tmp)
+                    {
+                        if (tmp & state) // 等于1说明已经收到了，否则未收到
+                        {
+                            recv_one->recv_state &= ~tmp; // 置0
+                            recv_one->base = SEQ_ADD(recv_one->base, 1);
+                            recv_one->window_base = WINDOW_ADD(recv_one->window_base, 1, recv_one->window_size);
+                        }
+                        else
+                            break;
+                        tmp <<= 1;
+                    }
                 }
-                
-                // 输出接收到的消息
-                int i, end_pos = (receiver->next_seq > 0 ? receiver->next_seq - 1: MAX_SEQ_NUM - 1)% receiver->window_size;
-                for(i = pos;i < end_pos;i++)
+                int i, len = WINDOW_SUB(recv_one->window_base, pos, recv_one->window_size);
+                if(len == 0) len = recv_one->window_size;
+                for (i = pos; i < pos + len; i++)
                 {
-                    printf("<RECV-%d>:[%s]\n", receiver->recv_id, receiver->recv_frames[i].data);
+                    fprintf(stderr, "<RECV-%d>:[%s]\n", receiver->recv_id, recv_one->recv_frames[i%recv_one->window_size].data);
                 }
-                printf("<RECV-%d>:[%s]\n", receiver->recv_id, inframe->data);
-
+                for (i = pos; i < pos + len; i++)
+                {
+                    printf("<RECV-%d>:[%s]\n", receiver->recv_id, recv_one->recv_frames[i%recv_one->window_size].data);
+                }
+                fprintf(stderr, "\t<Out-windows %d> pos:%d end_pos:%d, len:%d\n", receiver->recv_id, pos, recv_one->window_base, len);
+                for (i = 0; i < 8; i++)
+                {
+                    fprintf(stderr, "\t<Out-windows %d> %d:[%s]\n", receiver->recv_id, i, recv_one->recv_frames[i].data);
+                }
             }
-            outgoing_frame->ack_num = receiver->next_seq > 0 ? receiver->next_seq - 1: MAX_SEQ_NUM - 1;
+
+            // 输出接收到的消息
+
+            outgoing_frame->state = 0b00000010;
+            outgoing_frame->ack_num = SEQ_SUB(recv_one->base, 1);
             // 最后计算crc
             outgoing_frame->crc = compute_crc(outgoing_frame);
             ll_append_node(outgoing_frames_head_ptr, (void *)outgoing_frame);
-            memcpy(&receiver->recv_frames[pos], outgoing_frame, sizeof(Frame));
-            fprintf(stderr, "\t<RECV-%d>: Received Seq %d ,back ack's crc %d\n", receiver->recv_id, inframe->seq_num, outgoing_frame->crc);
+            fprintf(stderr, "\t<RECV-%d>: Received Seq %d ,crc %d, back ack's crc %d\n", receiver->recv_id, inframe->seq_num, inframe->crc, outgoing_frame->crc);
         }
         else
         {
             Frame *outgoing_frame = (Frame *)malloc(sizeof(Frame));
             memset((void *)outgoing_frame, 0, sizeof(Frame));
-            outgoing_frame->src_port = receiver->recv_id;
-            outgoing_frame->dst_port = inframe->src_port;
-            outgoing_frame->seq_num = 0;
-            outgoing_frame->window_size = receiver->window_size;
-            outgoing_frame->ack_num = receiver->next_seq > 0 ? receiver->next_seq - 1: MAX_SEQ_NUM - 1;
+            outgoing_frame->src_id = receiver->recv_id;
+            outgoing_frame->dst_id = inframe->src_id;
+            outgoing_frame->window_size = recv_one->window_size;
+            outgoing_frame->state = 0b00000010;
+            outgoing_frame->ack_num = SEQ_SUB(recv_one->base, 1);
             outgoing_frame->crc = compute_crc(outgoing_frame);
             ll_append_node(outgoing_frames_head_ptr, (void *)outgoing_frame);
             fprintf(stderr, "\t<RECV-%d>:Outside Seq %d\n", receiver->recv_id, inframe->seq_num);

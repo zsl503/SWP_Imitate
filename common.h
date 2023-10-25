@@ -24,6 +24,7 @@ typedef unsigned char uchar_t;
 
 #define SLIDE_WINDOW_SIZE 8 // 不得超过8
 #define MAX_SEQ_NUM 256
+#define MAX_ID_NUM 256
 #define FRAME_PAYLOAD_SIZE 48
 
 // 64 - 48 = 16 - 8 = 8
@@ -36,16 +37,16 @@ typedef unsigned char uchar_t;
 
 struct Frame_t
 {
-    uint8_t src_port;      // 源端口
-    uint8_t dst_port;      // 目的端口
+    uint8_t src_id;      // 源端口
+    uint8_t dst_id;      // 目的端口
     uint8_t seq_num;        // 帧的序号
     uint8_t ack_num;        // 确认号
-    uint8_t state;     // 帧的状态指示
+    uint8_t state;     // 帧的状态指示 0b00000001: seq 0b00000010: ACK
     uint8_t window_size;    // 窗口大小
 
     uint64_t ext;       // 扩展数据 
 
-    uint16_t crc;       // 校验和
+    uint16_t crc;       // 校验
     char data[FRAME_PAYLOAD_SIZE];  // 数据
     struct timeval expiring_timeval;    // 发送时间
 };
@@ -93,6 +94,32 @@ typedef struct LLnode_t LLnode;
 
 
 //Receiver and sender data structures
+
+struct Receiver_one
+{
+    /* data */
+    uint8_t recv_state;
+    uint8_t window_base;
+
+    uint8_t base;  // 接收基序号，即最小未接收帧
+    uint8_t window_size;
+    Frame recv_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
+};
+
+
+struct Sender_one
+{
+    /* data */
+    uint8_t output_state;
+    uint8_t window_base;
+
+    uint8_t base;  // 窗口的基序号，即最大已确认帧+1
+    uint8_t next_seq;
+    uint8_t window_size;
+    Frame output_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
+};
+
+
 struct Receiver_t
 {
     //DO NOT CHANGE:
@@ -106,12 +133,7 @@ struct Receiver_t
     
     int recv_id;
 
-    Frame recv_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
-    uint8_t recv_state;
-
-    uint8_t base;  // 窗口的基序号，即最大已确认帧+1
-    uint8_t window_size;
-    uint8_t next_seq;
+    struct Receiver_one *receiver_one;
 };
 
 struct Sender_t
@@ -128,15 +150,9 @@ struct Sender_t
     LLnode * input_framelist_head;  // 以Char指针存放
     int send_id; // 对应于port
 
-    Frame output_frames[SLIDE_WINDOW_SIZE];  // 以Frame指针存放
-    uint8_t output_state;
-    uint8_t window_base;
-
-    uint8_t base;  // 窗口的基序号，即最大已确认帧+1
-    uint8_t next_seq_num;
-    uint8_t window_size;
-    struct timeval expiring_timeval;
+    struct Sender_one *sender_one;
     long timeout_duration; // 微秒
+    struct timeval expiring_timeval;
 };
 
 enum SendFrame_DstType 

@@ -79,7 +79,6 @@ void send_frame(char * char_buffer,
 
         if (dst_type == ReceiverDst)  // sender发出的
         {
-            
             Receiver * dst = &glb_receivers_array[i];
             pthread_mutex_lock(&dst->buffer_mutex);
             ll_append_node(&dst->input_framelist_head,
@@ -90,6 +89,7 @@ void send_frame(char * char_buffer,
         else if (dst_type == SenderDst)
         {
             Sender * dst = &glb_senders_array[i];
+            // printf("%d\n", dst->send_id);
             pthread_mutex_lock(&dst->buffer_mutex);
             ll_append_node(&dst->input_framelist_head,
                            (void *) per_recv_char_buffer);
